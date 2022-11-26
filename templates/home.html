@@ -13,89 +13,111 @@
 {% endblock nav_icon %}
 
 {% block content %} 
-    <div class="container-fluid">
-        
-        <div class="card mb-3" style="max-width: 80%; margin-top: 20px;">
-            <div class="row g-0">
-                <div class="col-md-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Data campaign to predict</h5>
-                        <form>
-                            <span>Time</span>
-                            <input type="time" class="form-control" id="campaign_time">
-                            <br />
-                            <span>Start date</span>
-                            <input type="date" class="form-control" id="campaign_date">
-                            <br />
-                            <span>Template</span>
-                            <select class="form-select" aria-label="campaign template" id="template">
-                                <option selected>Open this select menu</option>
-                                <option value="rush">rush</option>
-                                <option value="slider-push">slider-push</option>
-                            </select>
-                            <br />
-                        </form>
+    <div class="container-fluid" style="background-color: #ffffff;">
+        <!--Tabs-->
+        <ul class="nav nav-tabs mt-3" id="Tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+            <button class="tabmenu nav-link active" id="tree-tab" data-bs-toggle="tab" data-bs-target="#tree" type="button" role="tab" aria-controls="tree" aria-selected="true">Tree Desicion</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="tabmenu nav-link" id="linear-tab" data-bs-toggle="tab" data-bs-target="#linear" type="button" role="tab" aria-controls="linear" aria-selected="false">Linear Regression</button>
+            </li>
+        </ul>
 
-                        <button class="btn btn-primary btn-lg">Start Predict</button>
+        <div class="row">
+            <div class="col-12">
+                <div class="tab-content" id="TabContent">
+                    <div class="tab-pane fade show active" id="tree" role="tabpanel" aria-labelledby="tree-tab">
+                        <div class="card mb-3" style="max-width: 80%; margin-left: 10%; margin-top: 20px;">
+                            <div class="row g-0">
+                                <div class="col-md-4">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Data campaign to predict</h5>
+                                        <form>
+                                            <span>Time</span>
+                                            <input type="time" class="form-control" id="campaign_time">
+                                            <br />
+                                            <span>Start date</span>
+                                            <input type="date" class="form-control" id="campaign_date">
+                                            <br />
+                                            <span>Template</span>
+                                            <select class="form-select" aria-label="campaign template" id="template">
+                                                <option selected>Open this select menu</option>
+                                                <option value="rush">rush</option>
+                                                <option value="slider-push">slider-push</option>
+                                            </select>
+                                            <br />
+                                        </form>
+                
+                                        <button class="btn btn-primary btn-lg">Start Predict</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Result Check</h5>
+                                        <table class="table table-hover">
+                                        <tbody>
+                                            <tr>
+                                                <td>
+                                                    Close
+                                                </td>
+                                                <td>
+                                                    35,893,000
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-success btn-sm">download csv</button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    Open
+                                                </td>
+                                                <td>
+                                                    2,359,000
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-success btn-sm">download csv</button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    No Action
+                                                </td>
+                                                <td>
+                                                    50,874,359
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-success btn-sm">download csv</button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    Invalid
+                                                </td>
+                                                <td>
+                                                    456,419
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-success btn-sm">download csv</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="card-body">
-                        <h5 class="card-title">Result Check</h5>
-                        <table class="table table-hover">
-                        <tbody>
-                            <tr>
-                                <td>
-                                    Close
-                                </td>
-                                <td>
-                                    35,893,000
-                                </td>
-                                <td>
-                                    <button class="btn btn-success btn-sm">download csv</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    Open
-                                </td>
-                                <td>
-                                    2,359,000
-                                </td>
-                                <td>
-                                    <button class="btn btn-success btn-sm">download csv</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    No Action
-                                </td>
-                                <td>
-                                    50,874,359
-                                </td>
-                                <td>
-                                    <button class="btn btn-success btn-sm">download csv</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    Invalid
-                                </td>
-                                <td>
-                                    456,419
-                                </td>
-                                <td>
-                                    <button class="btn btn-success btn-sm">download csv</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                        </table>
+
+                    <div class="tab-pane fade" id="linear" role="tabpanel" aria-labelledby="linear-tab">
+                        <h4>en proceso</h4>
                     </div>
                 </div>
             </div>
         </div>
+        
 
-        <div class="card mb-3" style="max-width: 80%; margin-top: 5%;">
+        <div class="card mb-3" style="max-width: 100%; margin-top: 5%;">
             <div class="card-footer bg-light text-center">
                 <span id="footUpdate"></span>
               </div>
