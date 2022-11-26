@@ -48,6 +48,9 @@ machine learning based tool - make the best desicion MBD
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
 echo 'export PATH="$HOME/.poetry/bin:$PATH"' >> $HOME/.bashrc
 source $HOME/.bashrc
+
+cd dir_project
+poetry shell
 poetry install
 ```
 ## enviroment
