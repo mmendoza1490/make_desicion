@@ -1,6 +1,5 @@
 from contextlib import nullcontext
 import os
-
 from typing import Optional
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import HTMLResponse
@@ -46,7 +45,11 @@ def create_app() -> FastAPI:
     def home(
         request: Request,
     ):
-        return templates.TemplateResponse("home.html", context={"request": request}, status_code=200)
+        url=request.base_url
+        return templates.TemplateResponse("home.html",context={
+            "request": request, 
+            "url":url,
+        }, status_code=200)
 
     @app.get("/tree", response_model=_schemas.tree_desicion)
     def verify_devices(
@@ -54,10 +57,17 @@ def create_app() -> FastAPI:
     ):
         return None
 
-    @app.get("/regression", response_model=_schemas.linea_regression)
+    @app.get("/regression/{_type}/{_date}", response_model=dict())
     def linear_regression(
+        _type:str,
+        _date:str,
         db: _orm.Session = Depends(db.get_db),
-    ):
-        return None
+    ): 
+        if _type == "open":
+            data = _services.get_result_regresion(_type=_type)
+            return data
+        else:
+            data = _services.get_result_regresion(_type=_type)
+            return data
 
     return app

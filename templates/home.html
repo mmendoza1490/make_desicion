@@ -3,7 +3,9 @@
 {% block title %} Home {% endblock title %}
 
 {% block css %}
+    <script src="https://code.highcharts.com/highcharts.js"></script>
     <link href="{{ url_for('static', path='/personalized.css') }}" rel="stylesheet">
+    <script src="{{url_for('static', path='/main.js')}}"></script>
 {% endblock css %}
 
 {% block nav_icon %}
@@ -110,7 +112,66 @@
                     </div>
 
                     <div class="tab-pane fade" id="linear" role="tabpanel" aria-labelledby="linear-tab">
-                        <h4>en proceso</h4>
+                        <div style="margin-top: 3%;">
+                            <div class="row justify-content-md-center d-flex">
+                                <div class="col-md-auto" style="padding-top: 10px;">
+                                    Campaign Date
+                                </div>
+                                <div class="col-md-auto">
+                                    <input type="date" class="form-control" id="dateRegression">
+                                </div>
+                                <div class="col col-lg-2">
+                                    <button class="btn btn-primary" id="btnRegression" onclick="tab_regression()">Start Regresion</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion" id="resultRegresion" style="margin-top: 3%;">
+                            <div class="accordion-item">
+                              <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                    <strong>The best hour to get the max open push</strong>
+                                </button>
+                              </h2>
+                              <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <div id="spinnerOpenPush" style="display: none;">
+                                        <div class="d-flex justify-content-center">
+                                            <div class="spinner-border  text-warning" role="status">
+                                              <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                          </div>
+                                    </div>
+                                    <div id="containerOpen">
+                                        <p>Insert the start date of the campaign and click on start predic</p>
+                                    </div>
+                                    <div id="dashboardOpen"></div>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="accordion-item">
+                              <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    <strong>The best hour to get the max deliviry</strong>
+                                </button>
+                              </h2>
+                              <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <div id="spinnerDeleviry" style="display: none;">
+                                        <div class="d-flex justify-content-center">
+                                            <div class="spinner-border  text-warning" role="status">
+                                              <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                          </div>
+                                    </div>
+
+                                    <div id="containerDelivery">
+                                        <p>Insert the start date of the campaign and click on start predic</p>
+                                    </div>
+                                    <div id="dashboardDelivery"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                     </div>
                 </div>
             </div>
@@ -123,6 +184,19 @@
               </div>
         </div>
     </div>
+
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 2060;">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header">
+            <strong class="me-auto">MBD Message</strong>
+            <small>Just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+          <div class="toast-body" id="message-toast">
+            <!--printer from js-->
+          </div>
+        </div>
+      </div>
 {% endblock content %}
 
 {% block script %}

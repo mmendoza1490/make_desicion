@@ -16,3 +16,11 @@ class Schemas:
 
         class Config:
             orm_mode = True
+
+    class dashboard_regresion(_pydantic.BaseModel):
+        hour:int
+        count:int
+        _type:str
+
+        class Config:
+            orm_mode = True
