@@ -79,7 +79,7 @@ function by_open(startDate)
         document.getElementById("dashboardOpen").innerHTML="";
         if(!data.error)
         {
-            dasboard_linear("dashboardOpen", data.data,"Open_Push","Predict by open push");
+            dasboard_linear("dashboardOpen", data.data,"Open_Push","Forecast by opened push");
             const h4 = document.createElement("h4");
             h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
             cOpen.appendChild(h4);
@@ -87,7 +87,7 @@ function by_open(startDate)
         }
         else
         {
-            notify("Linear Regression by open push has error " + data.msg, false);
+            notify("Linear Regression by opened push has error " + data.msg, false);
             cOpen.innerHTML="this section has error...";
         }
 
@@ -108,7 +108,7 @@ function by_delivery(startDate)
 
         if(!data.error)
         {
-            dasboard_linear("dashboardDelivery", data.data,"Open_Push","Predict by open push");
+            dasboard_linear("dashboardDelivery", data.data,"Open_Push","Forecast by opened push");
             const h4 = document.createElement("h4");
             h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
             c_delivery.appendChild(h4);
@@ -153,7 +153,7 @@ function dasboard_linear(container, data, _type, _title){
         },
         yAxis: {
             title: {
-                text: 'Count by hours',
+                text: 'Count by hour',
             },
             gridLineColor: '#f39c12'
         },
