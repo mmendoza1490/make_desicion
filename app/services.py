@@ -1,14 +1,16 @@
+import os
+from typing import Optional
+
 import sqlalchemy.orm as _orm
 from sqlalchemy import and_
+from psycopg2 import connect, extras
+import numpy
+from sklearn.metrics import r2_score
 
 from .database import Database as _database
-#import models as _models, schemas as _schemas, database as _database
 from .models import TreeDesicion
 from .schemas import Schemas as _schemas
 
-from typing import Optional
-import numpy
-from sklearn.metrics import r2_score
 
 class Data_base:
     def create_database():
@@ -20,6 +22,17 @@ class Data_base:
             yield db
         finally:
             db.close()
+
+    def connect():
+        return connect(
+            database=os.getenv("PSQL_DB"),
+            user=os.getenv("USER_DB"),
+            password=os.getenv("PASS_DB"),
+            host=os.getenv("HOST_DB"),
+            port=os.getenv("PORT_DB"),
+            cursor_factory=extras.NamedTupleCursor
+        )
+
 
 class Service:
     def get_result_tree(db: _orm.Session):
