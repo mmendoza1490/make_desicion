@@ -1,4 +1,6 @@
+from gettext import Catalog
 import os
+from re import template
 from typing import Optional
 
 import sqlalchemy.orm as _orm
@@ -11,6 +13,7 @@ from .database import Database as _database
 from .models import TreeDesicion
 from .schemas import Schemas as _schemas
 
+from app.types import Response, Catalogs
 
 class Data_base:
     def create_database():
@@ -72,3 +75,93 @@ class Service:
         except Exception as err:
             return {"error":True, "msg":err.args[0], "data":data}
             print (err)
+
+
+class query:
+    def __init__(self) -> None:
+        pass
+
+    def brands(self,DbConnection):
+        try:
+            with DbConnection as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT 
+                            id, 
+                            oem_role name
+                        FROM public.oem
+                        """
+                    )
+                    brands = cursor.fetchall()
+            data=[Catalogs(id=brand.id, name=brand.name) for brand in brands]
+            error = False
+            msg = ""
+        except Exception as e:
+            error = True
+            msg = e.__str__()
+            data = []
+
+        return Response(
+            msg=msg,
+            error=error,
+            data=data
+        )
+
+    def countries(self,DbConnection):
+        try:
+            with DbConnection as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT mcc, country as name 
+                        FROM users_admin.countries 
+                        WHERE show = true
+                        ORDER BY name
+                        """
+                    )
+                    countries = cursor.fetchall()
+            data=[Catalogs(id=country.mcc, name=country.name) for country in countries]
+            error = False
+            msg = ""
+        except Exception as e:
+            error = True
+            msg = e.__str__()
+            data = []
+
+        return Response(
+            msg=msg,
+            error=error,
+            data=data
+        )
+
+    def template(self, DbConnection):
+        try:
+            with DbConnection as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        with tmp_used as (
+                        select distinct template_id from update
+                        )
+                        select id, template_key as key
+                        from cota_campaign_templates  tmp 
+                        inner join tmp_used tused 
+                        on (tmp.id=tused.template_id)
+                        order by tmp.id
+                        """
+                    )
+                    template_ = cursor.fetchall()
+            data=[Catalogs(id=tmp.id, name=tmp.key) for tmp in template_]
+            error = False
+            msg = ""
+        except Exception as e:
+            error = True
+            msg = e.__str__()
+            data = []
+
+        return Response(
+            msg=msg,
+            error=error,
+            data=data
+        )

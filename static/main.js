@@ -57,6 +57,81 @@ function notify(text, action)
 }
 
 
+//form 
+tab_tredesicion();
+function tab_tredesicion()
+{
+    var url = make_url(window.location.href) + "/brands";
+    var client = new HttpClient();
+    client.get(url, function(response) {
+        data = JSON.parse(response);
+        console.log(data);
+
+        if(!data.error)
+        {
+            const brands = document.getElementById("brand_id");
+            data.data.map(function(item){
+                const _option = document.createElement("option");
+
+                _option.value=item.id;
+                _option.innerHTML=item.name;
+                brands.appendChild(_option);
+            });
+            
+        }
+        else {
+            notify("Getting brands error " + data.msg, false);
+        }
+    });
+    
+    // countries
+    var url = make_url(window.location.href) + "/countries";
+    var client = new HttpClient();
+    client.get(url, function(response) {
+        data = JSON.parse(response);
+        console.log(data);
+
+        if(!data.error)
+        {
+            const brands = document.getElementById("country_mcc");
+            data.data.map(function(item){
+                const _option = document.createElement("option");
+
+                _option.value=item.id;
+                _option.innerHTML=item.name;
+                brands.appendChild(_option);
+            });
+            
+        }
+        else {
+            notify("Getting countries mcc error " + data.msg, false);
+        }
+    });
+
+    //templates
+    var url = make_url(window.location.href) + "/templates";
+    var client = new HttpClient();
+    client.get(url, function(response) {
+        data = JSON.parse(response);
+
+        if(!data.error)
+        {
+            const brands = document.getElementById("template");
+            data.data.map(function(item){
+                const _option = document.createElement("option");
+
+                _option.value=item.id;
+                _option.innerHTML=item.name;
+                brands.appendChild(_option);
+            });
+            
+        }
+        else {
+            notify("Getting templates mcc error " + data.msg, false);
+        }
+    })
+}
+
 //  LINEAR REGRESSION
 function tab_regression()
 {
@@ -73,7 +148,6 @@ function by_open(startDate)
     var client = new HttpClient();
     client.get(url, function(response) {
         data = JSON.parse(response);
-        console.log(data);
         const cOpen = document.getElementById("containerOpen");
         cOpen.innerHTML = "";
         document.getElementById("dashboardOpen").innerHTML="";
@@ -101,14 +175,13 @@ function by_delivery(startDate)
     var client = new HttpClient();
     client.get(url, function(response) {
         data = JSON.parse(response);
-        console.log(data);
         const c_delivery = document.getElementById("containerDelivery");
         c_delivery.innerHTML="";
         document.getElementById("dashboardDelivery").innerHTML="";
 
         if(!data.error)
         {
-            dasboard_linear("dashboardDelivery", data.data,"Open_Push","Forecast by opened push");
+            dasboard_linear("dashboardDelivery", data.data,"Delivery","Forecast by opened push");
             const h4 = document.createElement("h4");
             h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
             c_delivery.appendChild(h4);

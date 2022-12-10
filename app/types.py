@@ -1,25 +1,15 @@
+from gettext import Catalog
 from typing import List
 
 from pydantic import BaseModel
 
 
-class Brand(BaseModel):
-    id: int
+class Catalogs(BaseModel):
+    id: str
     name: str
 
 
-class BrandResponse(BaseModel):
+class Response(BaseModel):
     error: bool
     msg: str
-    data: List[Brand]
-
-
-class Country(BaseModel):
-    mcc: str
-    name: str
-
-
-class CountryResponse(BaseModel):
-    error: bool
-    msg: str
-    data: List[Country]
+    data: List[Catalogs]
