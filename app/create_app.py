@@ -13,15 +13,18 @@ from .schemas import Schemas as _schemas
 from .services import (
     Service as _services,
     Data_base as db,
+    query
 )
 
-from app.types import Brand, BrandResponse, Country, CountryResponse
+from app.types import Response
 
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
 debug: bool = os.getenv("ENVIRONMENT") == "development"
+
+queries = query()
 
 def create_app() -> FastAPI:
 
@@ -64,75 +67,19 @@ def create_app() -> FastAPI:
         _date:str,
         db: _orm.Session = Depends(db.get_db),
     ): 
-        if _type == "open":
-            data = _services.get_result_regresion(_type=_type)
-            return data
-        else:
-            data = _services.get_result_regresion(_type=_type)
-            return data
+        data = _services.get_result_regresion(_type=_type)
+        return data
 
-    @app.get("/brands", response_model=BrandResponse)
+    @app.get("/brands", response_model=Response)
     def brands():
-        try:
-            DbConnection = db.connect()
-            with DbConnection as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        SELECT 
-                            id, 
-                            oem_role name
-                        FROM public.oem
-                        """
-                    )
-                    brands = cursor.fetchall()
-            data=[Brand(id=brand.id, name=brand.name) for brand in brands]
-            error = False
-            msg = ""
-        except Exception as e:
-            error = True
-            msg = e.__str__()
-            data = []
+        return queries.brands(DbConnection=db.connect())
 
-        return BrandResponse(
-            msg=msg,
-            error=error,
-            data=data
-        )
-
-    @app.get("/countries", response_model=CountryResponse)
+    @app.get("/countries", response_model=Response)
     def countries():
-        try:
-            DbConnection = db.connect()
-            with DbConnection as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        SELECT 
-                            DISTINCT mcc, 
-                            country name
-                        FROM public.cota_mcc_mnc
-                        ORDER BY name
-                        """
-                    )
-                    countries = cursor.fetchall()
-            data=[Country(mcc=country.mcc, name=country.name) for country in countries]
-            error = False
-            msg = ""
-        except Exception as e:
-            error = True
-            msg = e.__str__()
-            data = []
+        return queries.countries(DbConnection=db.connect())
 
-        return CountryResponse(
-            msg=msg,
-            error=error,
-            data=data
-        )
-
-
-
-
-
+    @app.get("/templates", response_model=Response)
+    def template():
+        return queries.template(DbConnection=db.connect())
 
     return app

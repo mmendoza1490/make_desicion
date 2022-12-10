@@ -36,17 +36,23 @@
                                     <div class="card-body">
                                         <h5 class="card-title">Data campaign to predict</h5>
                                         <form>
-                                            <span>Time</span>
-                                            <input type="time" class="form-control" id="campaign_time">
+                                            <span>Brand</span>
+                                            <select class="form-select" aria-label="campaign Brand" id="brand_id">
+                                                <option selected value="">Open this select menu</option>
+                                            </select>
                                             <br />
-                                            <span>Start date</span>
-                                            <input type="date" class="form-control" id="campaign_date">
+                                            <span>Countries</span>
+                                            <select class="form-select" aria-label="campaign country" id="country_mcc">
+                                                <option selected value="">Open this select menu</option>
+                                            </select>
+                                            <br />
+                                            <span>Start datetime</span>
+                                            <input type="datetime-local" class="form-control" id="campaign_date">
                                             <br />
                                             <span>Template</span>
                                             <select class="form-select" aria-label="campaign template" id="template">
                                                 <option selected>Open this select menu</option>
-                                                <option value="rush">rush</option>
-                                                <option value="slider-push">slider-push</option>
+                                                
                                             </select>
                                             <br />
                                         </form>
