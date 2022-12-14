@@ -11,14 +11,13 @@ machine learning based tool - make the best desicion MBD
 - **to programmers**
 1. [System Requirements](#system-requirements)
 2. [Package Manager](#package-manager)
-3. [Dependencies](#dependencies)
-4. [Installation](#installation)
-5. [enviroment](#enviroment)
-6. [Running](#running)
+3. [Installation](#installation)
+4. [enviroment](#enviroment)
+5. [Running](#running)
 
 - **just for test**
-7. [Requirements](#requirements)
-8. [Running](#running-test)
+6. [Requirements](#requirements)
+7. [Running](#running-test)
 
 ## System Requirements
 
@@ -31,21 +30,6 @@ machine learning based tool - make the best desicion MBD
 ## Package Manager
 
 - Poetry >= 1.1.6
-
-## Dependencies
-
-- python = "^3.9"
-- fastapi = "^0.78.0"
-- uvicorn = "^0.20.0"
-- SQLAlchemy = "^1.4.39"
-- sqlalchemy-orm = "^1.2.2"
-- gunicorn = "^20.1.0"
-- Jinja2 = "^3.1.2"
-- pandas = "^1.5.2"
-- scikit-learn = "^1.1.3"
-- matplotlib = "^3.6.2"
-- python-dotenv = "^0.21.0"
-- psycopg2-binary = "^2.9.5"
 
 ## Installation
 
