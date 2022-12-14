@@ -83,4 +83,8 @@ def create_app() -> FastAPI:
     def template():
         return queries.template(DbConnection=db.connect())
 
+    @app.get("/device-responses", response_model=Response)
+    def campaign_responses():
+        return queries.device_response(DbConnection=db.connect())
+
     return app

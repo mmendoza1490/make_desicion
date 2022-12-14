@@ -165,3 +165,29 @@ class query:
             error=error,
             data=data
         )
+
+    def device_response(self, DbConnection):
+        try:
+            with DbConnection as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT id, name FROM cota_device_responses_status_catalog
+                        """
+                    )
+                    responses = cursor.fetchall()
+
+            data=[Catalogs(id=response.id, name=response.name) for response in responses]
+            error = False
+            msg = ""
+
+            return Response(
+                msg=msg,
+                error=error,
+                data=data
+            )
+            
+        except Exception as e:
+            error = True
+            msg = e.__str__()
+            data = []
