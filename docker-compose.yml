@@ -1,0 +1,18 @@
+version: '3'
+services:
+  app:
+    container_name: make_desicion
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    hostname: make_desicion.app
+    restart: on-failure:2
+    networks:
+      - network
+    command: ["gunicorn", "main:app"]
+    ports:
+      - "8001:8800"
+    working_dir: /root/home/make_desicion/
+networks:
+  network:
+    driver: bridge

@@ -93,13 +93,21 @@ function tab_tredesicion()
 
         if(!data.error)
         {
-            const brands = document.getElementById("country_mcc");
-            data.data.map(function(item){
-                const _option = document.createElement("option");
+            const countries = document.getElementById("country_mcc");
+            const mccRegression = document.getElementById("mccRegression");
 
+            data.data.map(function(item){
+
+                const _option = document.createElement("option");
                 _option.value=item.id;
                 _option.innerHTML=item.name;
-                brands.appendChild(_option);
+                countries.appendChild(_option);
+
+                const _option_r = document.createElement("option");
+                _option_r.value=item.id;
+                _option_r.innerHTML=item.name;
+                mccRegression.appendChild(_option_r);
+                
             });
             
         }
@@ -133,22 +141,25 @@ function tab_tredesicion()
 }
 
 //  LINEAR REGRESSION
-function tab_regression()
+function start_regression()
 {
     const startDate = document.getElementById("dateRegression");
+    const mcc = document.getElementById("mccRegression");
     document.getElementById("spinnerOpenPush").style.display="block";
     document.getElementById("spinnerDeleviry").style.display="block";
-    by_open(startDate.value)
-    by_delivery(startDate.value)
+    by_open(startDate.value, mcc.value)
+    by_delivery(startDate.value, mcc.value)
 }
 
-function by_open(startDate)
+function by_open(startDate, mcc)
 {
-    var url = make_url(window.location.href) + "/regression/open/" + startDate;
+    const cOpen = document.getElementById("containerOpen");
+    cOpen.style.display="none";
+    var url = make_url(window.location.href) + "/regression/open/" + mcc + "/" + startDate;
     var client = new HttpClient();
     client.get(url, function(response) {
         data = JSON.parse(response);
-        const cOpen = document.getElementById("containerOpen");
+        cOpen.style.display="block";
         cOpen.innerHTML = "";
         document.getElementById("dashboardOpen").innerHTML="";
         if(!data.error)
@@ -169,13 +180,15 @@ function by_open(startDate)
     })
 }
 
-function by_delivery(startDate)
+function by_delivery(startDate, mcc)
 {
-    var url = make_url(window.location.href) + "/regression/delivery/" + startDate;
+    const c_delivery = document.getElementById("containerDelivery");
+    c_delivery.style.display = "none";
+    var url = make_url(window.location.href) + "/regression/delivery/" + mcc + "/" + startDate;
     var client = new HttpClient();
     client.get(url, function(response) {
         data = JSON.parse(response);
-        const c_delivery = document.getElementById("containerDelivery");
+        c_delivery.style.display = "block";
         c_delivery.innerHTML="";
         document.getElementById("dashboardDelivery").innerHTML="";
 

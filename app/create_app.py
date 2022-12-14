@@ -61,13 +61,14 @@ def create_app() -> FastAPI:
     ):
         return None
 
-    @app.get("/regression/{_type}/{_date}", response_model=dict())
+    @app.get("/regression/{_type}/{mcc}/{_date}", response_model=dict())
     def linear_regression(
         _type:str,
         _date:str,
+        mcc:str,
         db: _orm.Session = Depends(db.get_db),
     ): 
-        data = _services.get_result_regresion(_type=_type)
+        data = _services.get_result_regresion(_type=_type, _date=_date,mcc=mcc)
         return data
 
     @app.get("/brands", response_model=Response)

@@ -121,13 +121,21 @@
                         <div style="margin-top: 3%;">
                             <div class="row justify-content-md-center d-flex">
                                 <div class="col-md-auto" style="padding-top: 10px;">
+                                    Country mcc
+                                </div>
+                                <div class="col-md-auto">
+                                    <select class="form-select" aria-label="regression country" id="mccRegression">
+                                        <option selected value="">Open this select menu</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-auto" style="padding-top: 10px;">
                                     Campaign Date
                                 </div>
                                 <div class="col-md-auto">
                                     <input type="date" class="form-control" id="dateRegression">
                                 </div>
                                 <div class="col col-lg-2">
-                                    <button class="btn btn-primary" id="btnRegression" onclick="tab_regression()">Start Regresion</button>
+                                    <button class="btn btn-primary" id="btnRegression" onclick="start_regression()">Start Regresion</button>
                                 </div>
                             </div>
                         </div>

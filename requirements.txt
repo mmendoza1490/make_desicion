@@ -1,0 +1,15 @@
+python-dotenv
+psycopg2-binary
+pydantic
+requests
+db-sqlite3
+SQLAlchemy
+sqlalchemy-orm
+pysqlite3
+pandas
+scikit-learn
+matplotlib
+fastapi
+uvicorn
+gunicorn
+Jinja2

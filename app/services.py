@@ -41,7 +41,7 @@ class Service:
     def get_result_tree(db: _orm.Session):
         return None
 
-    def get_result_regresion(_type):
+    def get_result_regresion(_type, _date, mcc):
         try:
             # data 
             x = [1,2,3,5,6,7,8,9,10,12,13,14,15,16,18,19,21,22] # hour

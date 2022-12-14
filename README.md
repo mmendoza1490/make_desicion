@@ -8,12 +8,17 @@ machine learning based tool - make the best desicion MBD
 
 ## Table of Contents
 
+- **to programmers**
 1. [System Requirements](#system-requirements)
 2. [Package Manager](#package-manager)
 3. [Dependencies](#dependencies)
 4. [Installation](#installation)
 5. [enviroment](#enviroment)
 6. [Running](#running)
+
+- **just for test**
+7. [Requirements](#requirements)
+8. [Running](#running-test)
 
 ## System Requirements
 
@@ -67,11 +72,12 @@ PASS_DB="psql-1234"
 PORT_DB="5432"
 ```
 
-### Running
+## Running
 
 ### prerequisite command
 
 ```bash
+cd make_desicion
 poetry shell
 ```
 
@@ -102,3 +108,34 @@ Group= user01
 [Install]
 WantedBy=multi-user.target
 ```
+
+# Just to test
+
+## requirements
+
+* Docker and docker-compose
+``` bash
+apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+```
+## running test
+
+> Creating env file:
+``` bash
+cd make_desicion
+cp .env-sample .env
+```
+
+> Updating var to connect data base:
+``` bash
+HOST_DB="10.10.15.6"
+PSQL_DB="cota"
+USER_DB="user1"
+PASS_DB="passwd1"
+PORT_DB=5432
+```
+
+> Running docker
+``` bash
+docker-compose -f docker-compose.local.yml up
+```
+> Docker will start the API at http://localhost:8001
