@@ -120,6 +120,6 @@ PORT_DB=5432
 
 > Running docker
 ``` bash
-docker-compose -f docker-compose.local.yml up
+docker-compose -f docker-compose.yml up
 ```
 > Docker will start the API at http://localhost:8001
