@@ -155,12 +155,14 @@ function by_open(startDate, mcc)
 {
     const cOpen = document.getElementById("containerOpen");
     cOpen.style.display="none";
+    document.getElementById("dashboardOpen").style.display="none";
     var url = make_url(window.location.href) + "/regression/open/" + mcc + "/" + startDate;
     var client = new HttpClient();
     client.get(url, function(response) {
         data = JSON.parse(response);
         cOpen.style.display="block";
         cOpen.innerHTML = "";
+        document.getElementById("dashboardOpen").style.display="block";
         document.getElementById("dashboardOpen").innerHTML="";
         if(!data.error)
         {
@@ -184,12 +186,14 @@ function by_delivery(startDate, mcc)
 {
     const c_delivery = document.getElementById("containerDelivery");
     c_delivery.style.display = "none";
+    document.getElementById("dashboardDelivery").style.display="none";
     var url = make_url(window.location.href) + "/regression/delivery/" + mcc + "/" + startDate;
     var client = new HttpClient();
     client.get(url, function(response) {
         data = JSON.parse(response);
         c_delivery.style.display = "block";
         c_delivery.innerHTML="";
+        document.getElementById("dashboardDelivery").style.display="block";
         document.getElementById("dashboardDelivery").innerHTML="";
 
         if(!data.error)
@@ -211,6 +215,7 @@ function by_delivery(startDate, mcc)
 }
 
 function dasboard_linear(container, data, _type, _title){
+    document.getElementById(container).innerHTML = "";
     const categories = [...new Set(data.map(item => item.hour))];
     const data_series = [ {
             name:_type,
