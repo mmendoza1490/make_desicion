@@ -58,8 +58,9 @@ def create_app() -> FastAPI:
 
     @app.get("/tree", response_model=_schemas.tree_desicion)
     def verify_devices(
-        db: _orm.Session = Depends(db.get_db),
+        db:Any = Depends(db.connect),
     ):
+        data = services_.get_result_tree(dbConnection=db)
         return None
 
     @app.get("/regression/{type_}/{mcc}/{date_}", response_model=dict())

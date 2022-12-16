@@ -42,8 +42,9 @@ class Service:
     def __init__(self) -> None:
         self.query = query()
 
-    def get_result_tree(self, db: _orm.Session):
-        return None
+    def get_result_tree(self, dbConnection):
+        data = self.query.train_decision_tree_model(dbConnection)
+        return data
 
     def get_result_regresion(self, dbConnection, type_, date_, mcc):
         try:
@@ -262,3 +263,49 @@ class query:
 
 
         return hours,count_
+
+    def train_decision_tree_model(self, dbConnection):
+        try:
+            with dbConnection as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT androidid FROM imeis LIMIT 1000
+                        """
+                    )
+
+                    result = cursor.fetchall()
+
+            davices = numpy.array(result)
+
+            with dbConnection as conn:
+                with conn.cursor() as cursor:
+                    for device in numpy.nditer(davices):
+                        cursor.execute(
+                            """
+                            SELECT
+                                CBD.id,
+                                EXTRACT(dow from startdate) day_of_week,
+                                EXTRACT(hour from startdate) hour_of_day,
+                                U.template_id,
+                                U.oem,
+                                U.mcc,
+                                I.status
+                            FROM update U
+                                INNER JOIN imeis I ON (U.id=I.id)
+                                INNER JOIN cota_campaign_templates CCT ON CCT.id=U.template_id
+                                INNER JOIN clean_brand_data CBD ON (CBD.androidid=%(androidid)s)
+                            WHERE I.androidid=%(androidid)s AND
+                                i.status IS NOT NULL;
+                            """,
+                            {
+                                "androidid": device.item()
+                            }
+                        )
+
+                        result = cursor.fetchall()
+            return davices
+            
+
+        except Exception as e:
+            print(e.__str__())
