@@ -1,13 +1,13 @@
-from gettext import Catalog
+from dataclasses import dataclass
 import os
-from re import template
-from typing import Optional
-
+from datetime import datetime as dt
 import sqlalchemy.orm as _orm
 from sqlalchemy import and_
-from psycopg2 import connect, extras
+from psycopg2 import connect, extras, sql
 import numpy
 from sklearn.metrics import r2_score
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 
 from .database import Database as _database
 from .models import TreeDesicion
@@ -15,7 +15,8 @@ from .schemas import Schemas as _schemas
 
 from app.types import Response, Catalogs
 
-class Data_base:
+@dataclass
+class Data_base():
     def create_database():
         return _database.Base.metadata.create_all(bind=_database.engine)
 
@@ -38,30 +39,61 @@ class Data_base:
 
 
 class Service:
-    def get_result_tree(db: _orm.Session):
+    def __init__(self) -> None:
+        self.query = query()
+
+    def get_result_tree(self, db: _orm.Session):
         return None
 
-    def get_result_regresion(_type, _date, mcc):
+    def get_result_regresion(self, dbConnection, type_, date_, mcc):
         try:
-            # data 
-            x = [1,2,3,5,6,7,8,9,10,12,13,14,15,16,18,19,21,22] # hour
-            y = [100,90,80,60,60,55,60,65,70,70,75,76,78,79,90,99,99,100] # count
-            mydata = numpy.poly1d(numpy.polyfit(x, y, 3))
+            # getting data
+            day_pg = [1,2,3,4,5,6,0]
+            day_week = dt.strptime(date_,"%Y-%m-%d")
+            hours,count_ = self.query.open_regression(dbConnection=dbConnection, mcc=mcc,day_week=day_pg[day_week.weekday()], type_=type_)
 
-            # predict speed
+            if not hours or not count_:
+                return {"error":True, "msg":"was not found data", "data":[]}
+            # data 
+            # model_ = numpy.poly1d(numpy.polyfit(hours, count_, 3))
+
+            # # predict speed
             data=[]
             best_hour={"hour":0, "count":0}
-            for hour in range(1,21):
-                predict = mydata(hour)
-                payload = _schemas.dashboard_regresion(
-                    hour=hour,
-                    count=predict,
-                    _type=_type)
+            # for hour in range(0,23):
+            #     predict = model_(hour)
+            #     payload = _schemas.dashboard_regresion(
+            #         hour=hour,
+            #         count=predict,
+            #         type_=type_)
 
-                # get the best
-                if predict > best_hour["count"]:
-                    best_hour["count"] = int(predict)
-                    best_hour["hour"]=hour
+            #     # get the best
+            #     print(predict)
+            #     if predict > best_hour["count"]:
+            #         best_hour["count"] = int(predict)
+            #         best_hour["hour"]=hour
+            #         print(best_hour)
+
+            #     data.append(payload)
+
+            poly = PolynomialFeatures(degree=8, include_bias=False)
+            x = numpy.array(hours)
+            poly_features = poly.fit_transform(x.reshape(-1, 1))
+
+            poly_reg_model = LinearRegression()
+            poly_reg_model.fit(poly_features, count_)
+            y_predicted = poly_reg_model.predict(poly_features)
+            print(y_predicted)
+            for key,preicted in enumerate(y_predicted):
+                payload = _schemas.dashboard_regresion(
+                    hour=hours[key],
+                    count=preicted,
+                    type_=type_
+                )
+
+                if preicted > best_hour["count"]:
+                    best_hour["count"] = int(preicted)
+                    best_hour["hour"]=hours[key]
 
                 data.append(payload)
 
@@ -73,17 +105,17 @@ class Service:
                 "bestCount":best_hour["count"]
             }
         except Exception as err:
-            return {"error":True, "msg":err.args[0], "data":data}
             print (err)
+            return {"error":True, "msg":err.args[0], "data":[]}
 
 
 class query:
     def __init__(self) -> None:
         pass
 
-    def brands(self,DbConnection):
+    def brands(self,dbConnection):
         try:
-            with DbConnection as conn:
+            with dbConnection as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
@@ -108,9 +140,9 @@ class query:
             data=data
         )
 
-    def countries(self,DbConnection):
+    def countries(self,dbConnection):
         try:
-            with DbConnection as conn:
+            with dbConnection as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
@@ -135,9 +167,10 @@ class query:
             data=data
         )
 
-    def template(self, DbConnection):
+    def template(self,dbConnection):
         try:
-            with DbConnection as conn:
+
+            with dbConnection as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
@@ -166,9 +199,10 @@ class query:
             data=data
         )
 
-    def device_response(self, DbConnection):
+    def device_response(self,dbConnection):
         try:
-            with DbConnection as conn:
+
+            with dbConnection as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
@@ -191,3 +225,40 @@ class query:
             error = True
             msg = e.__str__()
             data = []
+
+    def open_regression(self,dbConnection, mcc:str, day_week:int, type_:str ):
+        try:
+
+            with dbConnection as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        sql.SQL("""
+                        WITH campaign as (
+                                SELECT ID
+                                FROM update u
+                                WHERE u.startdate::date > (current_date - interval '90 days') and
+                                extract(dow from u.startdate::date) = %(day_)s
+                                and  u.mcc=%(mcc)s
+                        )
+                        SELECT to_char(DATE,'HH24') as hours, count(i.id) as count_
+                                FROM campaign c  inner join IMEIS i  on (i.id=c.id)
+                                WHERE {filter_status} AND i.DATE::date > (current_date - interval '90 days')
+                                group by to_char(DATE,'HH24')
+                                order by to_char(DATE,'HH24')
+                        """).format(
+                            filter_status=sql.SQL("STATUS is not null" if type_=="delivery" else "STATUS IN (2,36,37,38,39,50,51,52)")
+                        ),
+                        {
+                            "mcc": mcc,
+                            "day_": day_week,
+                        }
+                    )
+                    opened = cursor.fetchall()
+            hours=[int(tmp.hours) for tmp in opened]
+            count_=[tmp.count_ for tmp in opened]
+           
+        except Exception as e:
+            print(e.__str__())
+
+
+        return hours,count_

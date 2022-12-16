@@ -1,6 +1,6 @@
 from contextlib import nullcontext
 import os
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import HTMLResponse
@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 
 from .schemas import Schemas as _schemas
 from .services import (
-    Service as _services,
+    Service,
     Data_base as db,
     query
 )
@@ -25,6 +25,7 @@ load_dotenv(override=True)
 debug: bool = os.getenv("ENVIRONMENT") == "development"
 
 queries = query()
+services_ = Service()
 
 def create_app() -> FastAPI:
 
@@ -61,30 +62,32 @@ def create_app() -> FastAPI:
     ):
         return None
 
-    @app.get("/regression/{_type}/{mcc}/{_date}", response_model=dict())
+    @app.get("/regression/{type_}/{mcc}/{date_}", response_model=dict())
     def linear_regression(
-        _type:str,
-        _date:str,
+        type_:str,
+        date_:str,
         mcc:str,
-        db: _orm.Session = Depends(db.get_db),
+        db:Any = Depends(db.connect),
     ): 
-        data = _services.get_result_regresion(_type=_type, _date=_date,mcc=mcc)
+        data = services_.get_result_regresion(dbConnection=db, type_=type_, date_=date_,mcc=mcc)
         return data
 
     @app.get("/brands", response_model=Response)
-    def brands():
-        return queries.brands(DbConnection=db.connect())
+    def brands(
+        db:Any = Depends(db.connect)
+    ):
+        return queries.brands(dbConnection=db)
 
     @app.get("/countries", response_model=Response)
-    def countries():
-        return queries.countries(DbConnection=db.connect())
+    def countries(db:Any = Depends(db.connect)):
+        return queries.countries(dbConnection=db)
 
     @app.get("/templates", response_model=Response)
-    def template():
-        return queries.template(DbConnection=db.connect())
+    def template(db:Any = Depends(db.connect)):
+        return queries.template(dbConnection=db)
 
     @app.get("/device-responses", response_model=Response)
-    def campaign_responses():
-        return queries.device_response(DbConnection=db.connect())
+    def campaign_responses(db:Any = Depends(db.connect)):
+        return queries.device_response(dbConnection=db)
 
     return app
