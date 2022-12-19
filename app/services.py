@@ -1,18 +1,22 @@
 from dataclasses import dataclass
 import os
 from datetime import datetime as dt
+
 import sqlalchemy.orm as _orm
-from sqlalchemy import and_
+from sqlalchemy import and_, text
 from psycopg2 import connect, extras, sql
 import numpy
 from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
+import pandas as pd
+from sklearn import tree
+from sklearn.tree import DecisionTreeClassifier
+from urllib import parse
 
 from .database import Database as _database
-from .models import TreeDesicion
+from .models import TreeDecision, LineaRegression
 from .schemas import Schemas as _schemas
-
 from app.types import Response, Catalogs
 
 @dataclass
@@ -25,7 +29,7 @@ class Data_base():
         try:
             yield db
         finally:
-            db.close()
+              db.close()
 
     def connect():
         return connect(
@@ -42,8 +46,16 @@ class Service:
     def __init__(self) -> None:
         self.query = query()
 
-    def get_result_tree(self, dbConnection):
-        data = self.query.train_decision_tree_model(dbConnection)
+    def get_result_tree(self, dbConnection, session, brand, country, date_time, template):
+    
+        data = self.query.train_decision_tree_model(
+            dbConnection,
+            session, 
+            brand=brand, 
+            country=country, 
+            date_time=date_time,
+            template=template,
+        )
         return data
 
     def get_result_regresion(self, dbConnection, type_, date_, mcc):
@@ -51,7 +63,12 @@ class Service:
             # getting data
             day_pg = [1,2,3,4,5,6,0]
             day_week = dt.strptime(date_,"%Y-%m-%d")
-            hours,count_ = self.query.open_regression(dbConnection=dbConnection, mcc=mcc,day_week=day_pg[day_week.weekday()], type_=type_)
+            hours,count_ = self.query.open_regression(
+                dbConnection=dbConnection, 
+                mcc=mcc, 
+                day_week=day_pg[day_week.weekday()], 
+                type_=type_
+            )
 
             if not hours or not count_:
                 return {"error":True, "msg":"was not found data", "data":[]}
@@ -227,7 +244,7 @@ class query:
             msg = e.__str__()
             data = []
 
-    def open_regression(self,dbConnection, mcc:str, day_week:int, type_:str ):
+    def open_regression(self, dbConnection, mcc:str, day_week:int, type_:str ):
         try:
 
             with dbConnection as conn:
@@ -264,13 +281,17 @@ class query:
 
         return hours,count_
 
-    def train_decision_tree_model(self, dbConnection):
+    def train_decision_tree_model(self, dbConnection, session, brand, country, date_time, template):
+        day_pg = [1,2,3,4,5,6,0]
+        parsed_dt = parse.unquote(date_time)
+        dt_obj = dt.strptime(date_time, '%Y-%m-%dT%H:%M:%SZ')
         try:
             with dbConnection as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
-                        SELECT androidid FROM imeis LIMIT 1000
+                        SELECT DISTINCT androidid FROM
+                        (SELECT  androidid FROM imeis limit 1000) as imeis
                         """
                     )
 
@@ -284,7 +305,6 @@ class query:
                         cursor.execute(
                             """
                             SELECT
-                                CBD.id,
                                 EXTRACT(dow from startdate) day_of_week,
                                 EXTRACT(hour from startdate) hour_of_day,
                                 U.template_id,
@@ -294,7 +314,6 @@ class query:
                             FROM update U
                                 INNER JOIN imeis I ON (U.id=I.id)
                                 INNER JOIN cota_campaign_templates CCT ON CCT.id=U.template_id
-                                INNER JOIN clean_brand_data CBD ON (CBD.androidid=%(androidid)s)
                             WHERE I.androidid=%(androidid)s AND
                                 i.status IS NOT NULL;
                             """,
@@ -304,8 +323,47 @@ class query:
                         )
 
                         result = cursor.fetchall()
+
+                        if not result:
+                            continue
+
+                        df = pd.DataFrame(result)
+
+                        features = ["day_of_week", "hour_of_day", "template_id", "oem", "mcc"]
+
+                        X = df[features]
+                        Y = df["status"]
+                        
+                        # predict with decision tree model
+                        dtree = DecisionTreeClassifier()
+                        dtree.fit(X, Y)
+
+                        predict = dtree.predict(
+                            [[day_pg[dt_obj.weekday()], dt_obj.hour, template, brand, country]]
+                        )
+
+                        # save decision tree prediction
+                        decision_tree_result = TreeDecision(
+                            androidid=device.item(),
+                            decision=str(predict[0]),
+                            date=date_time
+                        )
+
+                        session.add(decision_tree_result)
+
+                        session.commit()
+
+                    cursor.execute("SELECT id, name FROM cota_device_responses_status_catalog")
+
+                    responses_catalog = cursor.fetchall()
+
+            query = text("SELECT decision, count(*) FROM tree_decision GROUP BY decision;")
+
+            result = session.execute(query)
+
+            print(result)
+
             return davices
-            
 
         except Exception as e:
             print(e.__str__())

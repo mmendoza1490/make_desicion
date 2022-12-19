@@ -56,11 +56,26 @@ def create_app() -> FastAPI:
             "url":url,
         }, status_code=200)
 
-    @app.get("/tree", response_model=_schemas.tree_desicion)
+    @app.get(
+        "/tree/{brand}/{country}/{date_time}/{template}", 
+        response_model=_schemas.tree_desicion
+    )
     def verify_devices(
+        brand: str,
+        country: str,
+        date_time: str,
+        template: str,
         db:Any = Depends(db.connect),
+        session: _orm.Session = Depends(db.get_db),
     ):
-        data = services_.get_result_tree(dbConnection=db)
+        data = services_.get_result_tree(
+            dbConnection=db,
+            session=session,
+            brand=brand, 
+            country=country, 
+            date_time=date_time, 
+            template=template
+        )
         return None
 
     @app.get("/regression/{type_}/{mcc}/{date_}", response_model=dict())

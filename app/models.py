@@ -6,10 +6,10 @@ import sqlalchemy.orm as _orm
 from .database import Database as _database
 
 
-class TreeDesicion(_database.Base):
-    __tablename__ = "tree_desicion"
+class TreeDecision(_database.Base):
+    __tablename__ = "tree_decision"
     androidid = _sql.Column(_sql.String, primary_key=True, index=True)
-    desicion = _sql.Column(_sql.String)
+    decision = _sql.Column(_sql.String)
     date = _sql.Column(_sql.String)
 
 class LineaRegression(_database.Base):
