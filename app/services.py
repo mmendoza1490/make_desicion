@@ -15,9 +15,9 @@ from sklearn.tree import DecisionTreeClassifier
 from urllib import parse
 
 from .database import Database as _database
-from .models import TreeDecision, LineaRegression
+from .models import DecisionTree, LineaRegression
 from .schemas import Schemas as _schemas
-from app.types import Response, Catalogs
+from app.types import Response, Catalogs, CampaignResponseData
 
 @dataclass
 class Data_base():
@@ -291,7 +291,7 @@ class query:
                     cursor.execute(
                         """
                         SELECT DISTINCT androidid FROM
-                        (SELECT  androidid FROM imeis limit 1000) as imeis
+                        (SELECT  androidid FROM imeis limit 10) as imeis
                         """
                     )
 
@@ -343,7 +343,7 @@ class query:
                         )
 
                         # save decision tree prediction
-                        decision_tree_result = TreeDecision(
+                        decision_tree_result = DecisionTree(
                             androidid=device.item(),
                             decision=str(predict[0]),
                             date=date_time
@@ -351,19 +351,38 @@ class query:
 
                         session.add(decision_tree_result)
 
-                        session.commit()
+                        session.commit()       
 
-                    cursor.execute("SELECT id, name FROM cota_device_responses_status_catalog")
+            with dbConnection as conn:
+                with conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
+                    cursor.execute("SELECT id, name FROM cota_device_responses_status_catalog ORDER BY id")
 
                     responses_catalog = cursor.fetchall()
 
-            query = text("SELECT decision, count(*) FROM tree_decision GROUP BY decision;")
+            query = text("SELECT decision, count(*) total FROM decision_tree GROUP BY decision HAVING count(*) > 0;")
 
-            result = session.execute(query)
+            results = session.execute(query)
 
-            print(result)
+            data = []
+            s = []
+            n = results.fetchall()
+            for result in results:
+                s.append(result._mapping["decision"])
+
+            for response in responses_catalog:
+                d = response["id"]
+                cout = list(map(lambda x: x[0] == str(response["id"]), results.fetchall()))
+
+                count = [result for result in results.fetchall() if result[0] == str(response["id"])]
+                data.append(CampaignResponseData.parse_obj(response))
+
+
+            print(results)
 
             return davices
 
         except Exception as e:
             print(e.__str__())
+
+
+

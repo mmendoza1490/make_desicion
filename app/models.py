@@ -6,8 +6,8 @@ import sqlalchemy.orm as _orm
 from .database import Database as _database
 
 
-class TreeDecision(_database.Base):
-    __tablename__ = "tree_decision"
+class DecisionTree(_database.Base):
+    __tablename__ = "decision_tree"
     androidid = _sql.Column(_sql.String, primary_key=True, index=True)
     decision = _sql.Column(_sql.String)
     date = _sql.Column(_sql.String)
