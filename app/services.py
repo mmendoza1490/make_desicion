@@ -2,9 +2,10 @@ from dataclasses import dataclass
 import os
 from datetime import datetime as dt
 import csv
+from typing import Generator
+import zipfile
 
-import sqlalchemy.orm as _orm
-from sqlalchemy import and_, text
+from sqlalchemy import text
 from psycopg2 import connect, extras, sql
 import numpy
 from sklearn.metrics import r2_score
@@ -12,13 +13,14 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
 from .database import Database as _database
-from .models import DecisionTree, LineaRegression
+from .models import DecisionTree
 from .schemas import Schemas as _schemas
 from app.types import Response, Catalogs, DecisionTreeData, DecisionTreeResponse
+from app.utils import cleanup, get_data_from_csv
 
 @dataclass
 class Data_base():
@@ -394,20 +396,46 @@ class query:
             data=data
         )
 
-    # def get_data_from_csv(file_path: str) -> Generator:
-    #     with open(file=file_path, mode="rb") as file_like:
-    #         yield file_like.read()
+    def get_data_from_csv(file_path: str) -> Generator:
+        with open(file=file_path, mode="rb") as file_like:
+            yield file_like.read()
 
 
     def cleanup(csv_path):
         os.remove(csv_path)
 
-    def create_csv(self, session, response_status):
+    def create_csv(self, session, response_name):
+
+        query = {
+            "no_action": (
+                "SELECT androidid FROM decision_tree WHERE decision = 1;"
+            ),
+            "closed": (
+                "SELECT androidid FROM decision_tree WHERE decision = 3;"
+            ),
+            "error": (
+                "SELECT androidid FROM decision_tree WHERE decision = 4;"
+            ),
+            "opened": (
+                "SELECT androidid FROM decision_tree WHERE decision NOT IN (1, 3, 4);"
+            )
+        }
+
         try:
-            result = session.execute("SELECT * FROM decision_tree;")
+            result = session.execute(
+                query.get(response_name)
+            )
+
+            path = os.getcwd() + "/static/"
+
+            filename = response_name + "_responses"
+
+            csv_file = filename + ".csv"
+
+            zip_file = filename + ".zip"
 
             # Open the CSV file for writing
-            with open('static/responses_data.csv', 'w', newline='') as csvfile:
+            with open(path + csv_file, 'w', newline='') as csvfile:
                 # Create a CSV writer
                 writer = csv.writer(csvfile)
 
@@ -419,20 +447,19 @@ class query:
 
             session.close()
 
-            return FileResponse(
-                path='static/responses_data.csv',
+            with zipfile.ZipFile(path + zip_file, "w", zipfile.ZIP_DEFLATED) as zip:
+                # Add the file to the ZIP archive with a new name
+                zip.write(path + csv_file, csv_file)
+
+                os.remove(path + csv_file)
+
+            return StreamingResponse(
+                content=get_data_from_csv(path + zip_file),
                 media_type="application/octet-stream",
                 status_code=200,
-                filename="responses_data.csv",
-                # background=BackgroundTask(os.remove("static/responses_data.csv"))
+                headers={"Content-Disposition": "attachment; filename=" + zip_file},
+                background=BackgroundTask(cleanup, path + zip_file)
             )
 
         except Exception as e:
             print(e.__str__())
-
-
-        finally:
-            os.remove("static/responses_data.csv")
-            pass
-
-

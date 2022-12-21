@@ -102,11 +102,11 @@ def create_app() -> FastAPI:
     def template(db:Any = Depends(db.connect)):
         return queries.template(dbConnection=db)
 
-    @app.get("/download-csv/{response_status}")
+    @app.get("/download-csv/{response_name}")
     def csv_data(
-        response_status: str,
+        response_name: str,
         session: _orm.Session = Depends(db.get_db),
     ):
-        return queries.create_csv(session=session, response_status=response_status)
+        return queries.create_csv(session=session, response_name=response_name)
 
     return app
