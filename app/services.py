@@ -1,19 +1,26 @@
 from dataclasses import dataclass
 import os
 from datetime import datetime as dt
-import sqlalchemy.orm as _orm
-from sqlalchemy import and_
+import csv
+from typing import Generator
+import zipfile
+
+from sqlalchemy import text
 from psycopg2 import connect, extras, sql
 import numpy
 from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier
+from fastapi.responses import StreamingResponse
+from starlette.background import BackgroundTask
 
 from .database import Database as _database
-from .models import TreeDesicion
+from .models import DecisionTree
 from .schemas import Schemas as _schemas
-
-from app.types import Response, Catalogs
+from app.types import Response, Catalogs, DecisionTreeData, DecisionTreeResponse
+from app.utils import cleanup, get_data_from_csv
 
 @dataclass
 class Data_base():
@@ -25,7 +32,7 @@ class Data_base():
         try:
             yield db
         finally:
-            db.close()
+              db.close()
 
     def connect():
         return connect(
@@ -42,15 +49,30 @@ class Service:
     def __init__(self) -> None:
         self.query = query()
 
-    def get_result_tree(self, db: _orm.Session):
-        return None
+    def get_result_tree(self, dbConnection, session, brand, country, date_time, template):
+    
+        data = self.query.train_decision_tree_model(
+            dbConnection,
+            session, 
+            brand=brand, 
+            country=country, 
+            date_time=date_time,
+            template=template,
+        )
+
+        return data
 
     def get_result_regresion(self, dbConnection, type_, date_, mcc):
         try:
             # getting data
             day_pg = [1,2,3,4,5,6,0]
             day_week = dt.strptime(date_,"%Y-%m-%d")
-            hours,count_ = self.query.open_regression(dbConnection=dbConnection, mcc=mcc,day_week=day_pg[day_week.weekday()], type_=type_)
+            hours,count_ = self.query.open_regression(
+                dbConnection=dbConnection, 
+                mcc=mcc, 
+                day_week=day_pg[day_week.weekday()], 
+                type_=type_
+            )
 
             if not hours or not count_:
                 return {"error":True, "msg":"was not found data", "data":[]}
@@ -199,34 +221,7 @@ class query:
             data=data
         )
 
-    def device_response(self,dbConnection):
-        try:
-
-            with dbConnection as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        SELECT id, name FROM cota_device_responses_status_catalog
-                        """
-                    )
-                    responses = cursor.fetchall()
-
-            data=[Catalogs(id=response.id, name=response.name) for response in responses]
-            error = False
-            msg = ""
-
-            return Response(
-                msg=msg,
-                error=error,
-                data=data
-            )
-            
-        except Exception as e:
-            error = True
-            msg = e.__str__()
-            data = []
-
-    def open_regression(self,dbConnection, mcc:str, day_week:int, type_:str ):
+    def open_regression(self, dbConnection, mcc:str, day_week:int, type_:str ):
         try:
 
             with dbConnection as conn:
@@ -260,5 +255,211 @@ class query:
         except Exception as e:
             print(e.__str__())
 
-
         return hours,count_
+
+    def train_decision_tree_model(self, dbConnection, session, brand, country, date_time, template):
+        day_pg = [1,2,3,4,5,6,0]
+
+
+        # delete previous data from decision tree table
+        deletion_query = text("DELETE FROM decision_tree;")
+
+        session.execute(deletion_query)
+
+        dt_obj = dt.strptime(date_time, '%Y-%m-%dT%H:%M:%SZ')
+        
+        try:
+            with dbConnection as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT DISTINCT androidid, COUNT(*) total FROM
+                        (SELECT androidid FROM imeis limit 1000) as imeis
+                        GROUP BY androidid
+                        """
+                    )
+
+                    result = cursor.fetchall()
+
+            page_size = 50
+            done = False
+            offset = 0
+
+            with dbConnection as conn:
+                with conn.cursor() as cursor:
+                    while not done:
+                        cursor.execute(
+                            """
+                            SELECT DISTINCT androidid 
+                            FROM (SELECT androidid FROM imeis limit 1000) imeis 
+                            LIMIT %s OFFSET %s
+                            """, (page_size, offset)
+                        )
+
+                        # result = cursor.fetchall()
+
+                        davices = numpy.array(cursor.fetchall())
+                        
+                        offset += page_size
+
+                        if davices.size == 0:
+                            done = True
+                            continue
+
+                        for device in numpy.nditer(davices):
+                            cursor.execute(
+                                """
+                                SELECT
+                                    EXTRACT(dow from startdate) day_of_week,
+                                    EXTRACT(hour from startdate) hour_of_day,
+                                    U.template_id,
+                                    U.oem,
+                                    U.mcc,
+                                    I.status
+                                FROM update U
+                                    INNER JOIN imeis I ON (U.id=I.id)
+                                    INNER JOIN cota_campaign_templates CCT ON CCT.id=U.template_id
+                                WHERE I.androidid=%(androidid)s AND
+                                    i.status IS NOT NULL;
+                                """,
+                                {
+                                    "androidid": device.item()
+                                }
+                            )
+
+                            result = cursor.fetchall()
+
+                            if not result:
+                                continue
+
+                            df = pd.DataFrame(result)
+
+                            features = ["day_of_week", "hour_of_day", "template_id", "oem", "mcc"]
+
+                            X = df[features]
+                            Y = df["status"]
+                            
+                            # predict with decision tree model
+                            dtree = DecisionTreeClassifier()
+                            dtree.fit(X, Y)
+
+                            predict = dtree.predict(
+                                [[day_pg[dt_obj.weekday()], dt_obj.hour, template, brand, country]]
+                            )
+
+                            # save decision tree prediction
+                            decision_tree_result = DecisionTree(
+                                androidid=device.item(),
+                                decision=str(predict[0]),
+                                date=date_time
+                            )
+
+                            session.add(decision_tree_result)
+
+                            session.commit()       
+
+
+            group_result_query = text(
+                """
+                SELECT 
+                    CASE 
+                        WHEN decision = 1 THEN 'no_action' 
+                        WHEN decision = 3 THEN 'closed' 
+                        WHEN decision = 4 THEN 'error' 
+                        ELSE 'opened' 
+                    END AS name, 
+                    COUNT(*) total 
+                FROM decision_tree 
+                GROUP BY name;
+                """
+            )
+
+            results = session.execute(group_result_query)
+
+            data = []
+
+            for result in results:
+                data.append(DecisionTreeData.parse_obj(result))
+
+            msg = ""
+            error = False
+
+        except Exception as e:
+            print(e.__str__())
+            error = True
+            msg = e.__str__()
+            data = []
+
+        return DecisionTreeResponse(
+            msg=msg,
+            error=error,
+            data=data
+        )
+
+    def get_data_from_csv(file_path: str) -> Generator:
+        with open(file=file_path, mode="rb") as file_like:
+            yield file_like.read()
+
+
+    def cleanup(csv_path):
+        os.remove(csv_path)
+
+    def create_csv(self, session, response_name):
+
+        query = {
+            "no_action": (
+                "SELECT androidid FROM decision_tree WHERE decision = 1;"
+            ),
+            "closed": (
+                "SELECT androidid FROM decision_tree WHERE decision = 3;"
+            ),
+            "error": (
+                "SELECT androidid FROM decision_tree WHERE decision = 4;"
+            ),
+            "opened": (
+                "SELECT androidid FROM decision_tree WHERE decision NOT IN (1, 3, 4);"
+            )
+        }
+
+        try:
+            result = session.execute(
+                query.get(response_name)
+            )
+
+            path = os.getcwd() + "/static/"
+
+            filename = response_name + "_responses"
+
+            csv_file = filename + ".csv"
+
+            zip_file = filename + ".zip"
+
+            # Open the CSV file for writing
+            with open(path + csv_file, 'w', newline='') as csvfile:
+                # Create a CSV writer
+                writer = csv.writer(csvfile)
+
+                # Write the column names to the CSV file
+                writer.writerow([column for column in result.keys()])
+
+                # Write the rows to the CSV file
+                writer.writerows(result.fetchall())
+
+            session.close()
+
+            with zipfile.ZipFile(path + zip_file, "w", zipfile.ZIP_DEFLATED) as zip:
+                # Add the file to the ZIP archive with a new name
+                zip.write(path + csv_file, csv_file)
+
+                os.remove(path + csv_file)
+
+            return StreamingResponse(
+                content=get_data_from_csv(path + zip_file),
+                media_type="application/octet-stream",
+                status_code=200,
+                headers={"Content-Disposition": "attachment; filename=" + zip_file},
+                background=BackgroundTask(cleanup, path + zip_file)
+            )
+
+        except Exception as e:
+            print(e.__str__())
