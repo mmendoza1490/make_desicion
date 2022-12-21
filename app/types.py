@@ -15,7 +15,12 @@ class Response(BaseModel):
     data: List[Catalogs]
 
 
-class CampaignResponseData(BaseModel):
+class DecisionTreeData(BaseModel):
     name: str
-    id: str
     total: int = 0
+
+
+class DecisionTreeResponse(BaseModel):
+    error: bool
+    msg: str
+    data: List[DecisionTreeData]

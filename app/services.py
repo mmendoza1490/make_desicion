@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import os
 from datetime import datetime as dt
+import csv
 
 import sqlalchemy.orm as _orm
 from sqlalchemy import and_, text
@@ -10,14 +11,14 @@ from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 import pandas as pd
-from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier
-from urllib import parse
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 from .database import Database as _database
 from .models import DecisionTree, LineaRegression
 from .schemas import Schemas as _schemas
-from app.types import Response, Catalogs, CampaignResponseData
+from app.types import Response, Catalogs, DecisionTreeData, DecisionTreeResponse
 
 @dataclass
 class Data_base():
@@ -56,6 +57,7 @@ class Service:
             date_time=date_time,
             template=template,
         )
+
         return data
 
     def get_result_regresion(self, dbConnection, type_, date_, mcc):
@@ -217,33 +219,6 @@ class query:
             data=data
         )
 
-    def device_response(self,dbConnection):
-        try:
-
-            with dbConnection as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        SELECT id, name FROM cota_device_responses_status_catalog
-                        """
-                    )
-                    responses = cursor.fetchall()
-
-            data=[Catalogs(id=response.id, name=response.name) for response in responses]
-            error = False
-            msg = ""
-
-            return Response(
-                msg=msg,
-                error=error,
-                data=data
-            )
-            
-        except Exception as e:
-            error = True
-            msg = e.__str__()
-            data = []
-
     def open_regression(self, dbConnection, mcc:str, day_week:int, type_:str ):
         try:
 
@@ -278,111 +253,186 @@ class query:
         except Exception as e:
             print(e.__str__())
 
-
         return hours,count_
 
     def train_decision_tree_model(self, dbConnection, session, brand, country, date_time, template):
         day_pg = [1,2,3,4,5,6,0]
-        parsed_dt = parse.unquote(date_time)
+
+
+        # delete previous data from decision tree table
+        deletion_query = text("DELETE FROM decision_tree;")
+
+        session.execute(deletion_query)
+
         dt_obj = dt.strptime(date_time, '%Y-%m-%dT%H:%M:%SZ')
+        
         try:
             with dbConnection as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
-                        SELECT DISTINCT androidid FROM
-                        (SELECT  androidid FROM imeis limit 10) as imeis
+                        SELECT DISTINCT androidid, COUNT(*) total FROM
+                        (SELECT androidid FROM imeis limit 1000) as imeis
+                        GROUP BY androidid
                         """
                     )
 
                     result = cursor.fetchall()
 
-            davices = numpy.array(result)
+            page_size = 50
+            done = False
+            offset = 0
 
             with dbConnection as conn:
                 with conn.cursor() as cursor:
-                    for device in numpy.nditer(davices):
+                    while not done:
                         cursor.execute(
                             """
-                            SELECT
-                                EXTRACT(dow from startdate) day_of_week,
-                                EXTRACT(hour from startdate) hour_of_day,
-                                U.template_id,
-                                U.oem,
-                                U.mcc,
-                                I.status
-                            FROM update U
-                                INNER JOIN imeis I ON (U.id=I.id)
-                                INNER JOIN cota_campaign_templates CCT ON CCT.id=U.template_id
-                            WHERE I.androidid=%(androidid)s AND
-                                i.status IS NOT NULL;
-                            """,
-                            {
-                                "androidid": device.item()
-                            }
+                            SELECT DISTINCT androidid 
+                            FROM (SELECT androidid FROM imeis limit 1000) imeis 
+                            LIMIT %s OFFSET %s
+                            """, (page_size, offset)
                         )
 
-                        result = cursor.fetchall()
+                        # result = cursor.fetchall()
 
-                        if not result:
+                        davices = numpy.array(cursor.fetchall())
+                        
+                        offset += page_size
+
+                        if davices.size == 0:
+                            done = True
                             continue
 
-                        df = pd.DataFrame(result)
+                        for device in numpy.nditer(davices):
+                            cursor.execute(
+                                """
+                                SELECT
+                                    EXTRACT(dow from startdate) day_of_week,
+                                    EXTRACT(hour from startdate) hour_of_day,
+                                    U.template_id,
+                                    U.oem,
+                                    U.mcc,
+                                    I.status
+                                FROM update U
+                                    INNER JOIN imeis I ON (U.id=I.id)
+                                    INNER JOIN cota_campaign_templates CCT ON CCT.id=U.template_id
+                                WHERE I.androidid=%(androidid)s AND
+                                    i.status IS NOT NULL;
+                                """,
+                                {
+                                    "androidid": device.item()
+                                }
+                            )
 
-                        features = ["day_of_week", "hour_of_day", "template_id", "oem", "mcc"]
+                            result = cursor.fetchall()
 
-                        X = df[features]
-                        Y = df["status"]
-                        
-                        # predict with decision tree model
-                        dtree = DecisionTreeClassifier()
-                        dtree.fit(X, Y)
+                            if not result:
+                                continue
 
-                        predict = dtree.predict(
-                            [[day_pg[dt_obj.weekday()], dt_obj.hour, template, brand, country]]
-                        )
+                            df = pd.DataFrame(result)
 
-                        # save decision tree prediction
-                        decision_tree_result = DecisionTree(
-                            androidid=device.item(),
-                            decision=str(predict[0]),
-                            date=date_time
-                        )
+                            features = ["day_of_week", "hour_of_day", "template_id", "oem", "mcc"]
 
-                        session.add(decision_tree_result)
+                            X = df[features]
+                            Y = df["status"]
+                            
+                            # predict with decision tree model
+                            dtree = DecisionTreeClassifier()
+                            dtree.fit(X, Y)
 
-                        session.commit()       
+                            predict = dtree.predict(
+                                [[day_pg[dt_obj.weekday()], dt_obj.hour, template, brand, country]]
+                            )
 
-            with dbConnection as conn:
-                with conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
-                    cursor.execute("SELECT id, name FROM cota_device_responses_status_catalog ORDER BY id")
+                            # save decision tree prediction
+                            decision_tree_result = DecisionTree(
+                                androidid=device.item(),
+                                decision=str(predict[0]),
+                                date=date_time
+                            )
 
-                    responses_catalog = cursor.fetchall()
+                            session.add(decision_tree_result)
 
-            query = text("SELECT decision, count(*) total FROM decision_tree GROUP BY decision HAVING count(*) > 0;")
+                            session.commit()       
 
-            results = session.execute(query)
+
+            group_result_query = text(
+                """
+                SELECT 
+                    CASE 
+                        WHEN decision = 1 THEN 'no_action' 
+                        WHEN decision = 3 THEN 'closed' 
+                        WHEN decision = 4 THEN 'error' 
+                        ELSE 'opened' 
+                    END AS name, 
+                    COUNT(*) total 
+                FROM decision_tree 
+                GROUP BY name;
+                """
+            )
+
+            results = session.execute(group_result_query)
 
             data = []
-            s = []
-            n = results.fetchall()
+
             for result in results:
-                s.append(result._mapping["decision"])
+                data.append(DecisionTreeData.parse_obj(result))
 
-            for response in responses_catalog:
-                d = response["id"]
-                cout = list(map(lambda x: x[0] == str(response["id"]), results.fetchall()))
+            msg = ""
+            error = False
 
-                count = [result for result in results.fetchall() if result[0] == str(response["id"])]
-                data.append(CampaignResponseData.parse_obj(response))
+        except Exception as e:
+            print(e.__str__())
+            error = True
+            msg = e.__str__()
+            data = []
+
+        return DecisionTreeResponse(
+            msg=msg,
+            error=error,
+            data=data
+        )
+
+    # def get_data_from_csv(file_path: str) -> Generator:
+    #     with open(file=file_path, mode="rb") as file_like:
+    #         yield file_like.read()
 
 
-            print(results)
+    def cleanup(csv_path):
+        os.remove(csv_path)
 
-            return davices
+    def create_csv(self, session, response_status):
+        try:
+            result = session.execute("SELECT * FROM decision_tree;")
+
+            # Open the CSV file for writing
+            with open('static/responses_data.csv', 'w', newline='') as csvfile:
+                # Create a CSV writer
+                writer = csv.writer(csvfile)
+
+                # Write the column names to the CSV file
+                writer.writerow([column for column in result.keys()])
+
+                # Write the rows to the CSV file
+                writer.writerows(result.fetchall())
+
+            session.close()
+
+            return FileResponse(
+                path='static/responses_data.csv',
+                media_type="application/octet-stream",
+                status_code=200,
+                filename="responses_data.csv",
+                # background=BackgroundTask(os.remove("static/responses_data.csv"))
+            )
 
         except Exception as e:
             print(e.__str__())
 
+
+        finally:
+            os.remove("static/responses_data.csv")
+            pass
 
 

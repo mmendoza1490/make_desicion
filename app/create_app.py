@@ -3,7 +3,7 @@ import os
 from typing import Optional, List, Any
 
 from fastapi import FastAPI, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 import sqlalchemy.orm as _orm
 from fastapi.responses import JSONResponse
 from fastapi import  status
@@ -16,7 +16,7 @@ from .services import (
     query
 )
 
-from app.types import Response
+from app.types import Response, DecisionTreeResponse
 
 from dotenv import load_dotenv
 
@@ -58,7 +58,7 @@ def create_app() -> FastAPI:
 
     @app.get(
         "/tree/{brand}/{country}/{date_time}/{template}", 
-        response_model=_schemas.tree_desicion
+        response_model=DecisionTreeResponse
     )
     def verify_devices(
         brand: str,
@@ -76,7 +76,7 @@ def create_app() -> FastAPI:
             date_time=date_time, 
             template=template
         )
-        return None
+        return data
 
     @app.get("/regression/{type_}/{mcc}/{date_}", response_model=dict())
     def linear_regression(
@@ -102,8 +102,11 @@ def create_app() -> FastAPI:
     def template(db:Any = Depends(db.connect)):
         return queries.template(dbConnection=db)
 
-    @app.get("/device-responses", response_model=Response)
-    def campaign_responses(db:Any = Depends(db.connect)):
-        return queries.device_response(dbConnection=db)
+    @app.get("/download-csv/{response_status}")
+    def csv_data(
+        response_status: str,
+        session: _orm.Session = Depends(db.get_db),
+    ):
+        return queries.create_csv(session=session, response_status=response_status)
 
     return app
