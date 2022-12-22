@@ -271,21 +271,20 @@ class query:
         
         try:
 
-            page_size = int(universe / 10) if universe > 1000 else universe
+            page_size = int(os.getenv("PAGINATION_CHUNK_SIZE"))
             done = False
             offset = 0
 
             with dbConnection as conn:
                 with conn.cursor() as cursor:
                     while not done and offset < universe:
-                        
 
                         cursor.execute(
                             """
                             WITH devices AS (
                             SELECT DISTINCT androidid
-                            FROM (SELECT androidid FROM imeis limit %s) imeis
-                            LIMIT %s OFFSET %s
+                            FROM (SELECT androidid FROM imeis LIMIT %s) imeis
+                            LIMIT %s OFFSET %s                        
                             )
                             SELECT
                                 EXTRACT(dow from startdate) day_of_week,
@@ -317,6 +316,14 @@ class query:
 
                         for imei in imeis:
 
+                            imei_exist = session.execute(
+                                "SELECT androidid FROM decision_tree WHERE androidid = :value",
+                                {"value": imei}
+                            )
+
+                            if imei_exist.fetchone():
+                                continue
+
                             device_responses = df.loc[df["androidid"] == imei]
 
                             X = device_responses[features]
@@ -324,7 +331,7 @@ class query:
                             
                             # predict with decision tree model
                             dtree = DecisionTreeClassifier()
-                            dtree.fit(X, Y)
+                            dtree.fit(X.values, Y)
 
                             predict = dtree.predict(
                                 [[day_pg[dt_obj.weekday()], dt_obj.hour, template, brand, country]]
