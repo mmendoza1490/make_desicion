@@ -77,29 +77,12 @@ class Service:
 
             if not hours or not count_:
                 return {"error":True, "msg":"was not found data", "data":[]}
-            # data 
-            # model_ = numpy.poly1d(numpy.polyfit(hours, count_, 3))
 
             # # predict speed
             data=[]
             best_hour={"hour":0, "count":0}
-            # for hour in range(0,23):
-            #     predict = model_(hour)
-            #     payload = _schemas.dashboard_regresion(
-            #         hour=hour,
-            #         count=predict,
-            #         type_=type_)
 
-            #     # get the best
-            #     print(predict)
-            #     if predict > best_hour["count"]:
-            #         best_hour["count"] = int(predict)
-            #         best_hour["hour"]=hour
-            #         print(best_hour)
-
-            #     data.append(payload)
-
-            poly = PolynomialFeatures(degree=8, include_bias=False)
+            poly = PolynomialFeatures(degree=2, include_bias=False)
             x = numpy.array(hours)
             poly_features = poly.fit_transform(x.reshape(-1, 1))
 
@@ -267,7 +250,7 @@ class query:
 
         session.execute(deletion_query)
 
-        dt_obj = dt.strptime(date_time, '%Y-%m-%dT%H:%M:%SZ')
+        dt_obj = dt.strptime(date_time, '%Y-%m-%dT%H:%M')
         
         try:
 

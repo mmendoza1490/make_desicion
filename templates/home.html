@@ -10,7 +10,7 @@
 
 {% block nav_icon %}
     <a class="navbar-brand" href="#">
-        <img src="{{ url_for('static', path='/banner.png') }}">
+        <img src="{{ url_for('static', path='/mbd_logo_2.png') }}" height="150">
     </a>
 {% endblock nav_icon %}
 
@@ -35,7 +35,9 @@
                                 <div class="col-md-4">
                                     <div class="card-body">
                                         <h5 class="card-title">Data campaign to predict</h5>
-                                        <form>
+                                            <span>Amount to process</span><span title="the higher the quantity, the longer the waiting time"><strong> (?) </strong></span>
+                                            <input type="number" class="form-control" id="universe" min="1" value="10000" title="the higher the quantity, the longer the waiting time">
+                                            <br />
                                             <span>Brand</span>
                                             <select class="form-select" aria-label="campaign Brand" id="brand_id">
                                                 <option selected value="">Open this select menu</option>
@@ -54,63 +56,34 @@
                                                 <option selected>Open this select menu</option>
                                                 
                                             </select>
+                                            
                                             <br />
-                                        </form>
-                
-                                        <button class="btn btn-primary btn-lg">Start Predict</button>
+                                        <button class="btn btn-primary" id="btnDecision" onclick="start_decision()">Start Predict</button>
                                     </div>
                                 </div>
                                 <div class="col-md-8">
                                     <div class="card-body">
                                         <h5 class="card-title">Result Check</h5>
-                                        <table class="table table-hover">
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    Close
-                                                </td>
-                                                <td>
-                                                    35,893,000
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-success btn-sm">download csv</button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    Open
-                                                </td>
-                                                <td>
-                                                    2,359,000
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-success btn-sm">download csv</button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    No Action
-                                                </td>
-                                                <td>
-                                                    50,874,359
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-success btn-sm">download csv</button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    Invalid
-                                                </td>
-                                                <td>
-                                                    456,419
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-success btn-sm">download csv</button>
-                                                </td>
-                                            </tr>
+                                        <table class="table table-hover" id="tableResult">
+                                        <tbody id="resultDecision">
+                                            <!-- printer by javascript -->
                                         </tbody>
                                         </table>
+                                        
+                                        <div id="emptyResultTree" style="margin-top: 30%;">
+                                            <div class="d-flex justify-content-center">
+                                                <h5 id="textResponse">Fill the form and click start</h5>
+                                            </div>
+                                        </div>
+
+                                        <div id="spinnerTree" style="display: none; margin-top: 25%;">
+                                            <div class="d-flex justify-content-center">
+                                                <div class="spinner-border  text-warning" style="font-size: 4rem; width: 6rem; height: 6rem;" role="status">
+                                                  <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                              </div>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
