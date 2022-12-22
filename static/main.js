@@ -214,6 +214,82 @@ function by_delivery(startDate, mcc)
     })
 }
 
+function start_decision()
+{
+    const universe = document.getElementById("universe").value;
+    const brand = document.getElementById("brand_id").value;
+    const country = document.getElementById("country_mcc").value;
+    const date_time = document.getElementById("campaign_date").value;
+    const template = document.getElementById("template").value;
+
+    const table_result = document.getElementById("tableResult");
+    table_result.style.display = "none";
+
+    const result_text = document.getElementById("emptyResultTree");
+    result_text.style.display = "none";
+
+    const spinner = document.getElementById("spinnerTree");
+    spinner.style.display = "block";
+
+    
+    var url = make_url(window.location.href) + "/tree/" + brand+ "/"+ country + "/" + date_time + "/"  + template + "/" + universe;
+    var client = new HttpClient();
+    client.get(url, function(response) {
+        data = JSON.parse(response);
+        console.log(data);
+        if(!data.error)
+        {
+            const tbody = document.getElementById("resultDecision");
+            tbody.innerHTML = "";
+            data.data.map(function(item){
+                const tr = document.createElement("tr");
+                const td_key = document.createElement("td");
+                const td_count = document.createElement("td");
+                const td_button = document.createElement("td");
+
+                td_key.innerHTML = item.name;
+                td_count.innerHTML = item.total;
+
+                const btn = document.createElement("a");
+                btn.classList.add("btn","btn-success","btn-sm");
+                btn.innerHTML = "download csv";
+                btn.href = make_url(window.location.href) + "/download-csv/" + item.name;
+
+                td_button.appendChild(btn);
+
+                
+
+                tr.appendChild(td_key);
+                tr.appendChild(td_count);
+                tr.appendChild(td_button);
+
+                tbody.appendChild(tr);
+            });
+
+            notify("preddict by tree decision was successful", true);
+
+            if (data.data.length > 0){
+                table_result.style.display = "block";
+            }
+            else{
+                result_text.style.display = "block";
+                document.getElementById("textResponse").innerHTML="The last execution reponse empty values";
+            }
+            
+        }
+        else
+        {
+            notify("Tree decision error response " + data.msg, false);
+            result_text.style.display = "block";
+            document.getElementById("textResponse").innerHTML= "The last execution fail";
+
+        }
+
+        spinner.style.display = "none";
+    });
+
+}
+
 function dasboard_linear(container, data, _type, _title){
     document.getElementById(container).innerHTML = "";
     const categories = [...new Set(data.map(item => item.hour))];
