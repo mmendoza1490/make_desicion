@@ -57,7 +57,7 @@ def create_app() -> FastAPI:
         }, status_code=200)
 
     @app.get(
-        "/tree/{brand}/{country}/{date_time}/{template}", 
+        "/tree/{brand}/{country}/{date_time}/{template}/{universe}", 
         response_model=DecisionTreeResponse
     )
     def verify_devices(
@@ -65,6 +65,7 @@ def create_app() -> FastAPI:
         country: str,
         date_time: str,
         template: str,
+        universe: int,
         db:Any = Depends(db.connect),
         session: _orm.Session = Depends(db.get_db),
     ):
@@ -74,7 +75,8 @@ def create_app() -> FastAPI:
             brand=brand, 
             country=country, 
             date_time=date_time, 
-            template=template
+            template=template,
+            universe=universe
         )
         return data
 

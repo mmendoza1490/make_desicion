@@ -49,7 +49,7 @@ class Service:
     def __init__(self) -> None:
         self.query = query()
 
-    def get_result_tree(self, dbConnection, session, brand, country, date_time, template):
+    def get_result_tree(self, dbConnection, session, brand, country, date_time, template, universe):
     
         data = self.query.train_decision_tree_model(
             dbConnection,
@@ -58,6 +58,7 @@ class Service:
             country=country, 
             date_time=date_time,
             template=template,
+            universe=universe
         )
 
         return data
@@ -257,7 +258,7 @@ class query:
 
         return hours,count_
 
-    def train_decision_tree_model(self, dbConnection, session, brand, country, date_time, template):
+    def train_decision_tree_model(self, dbConnection, session, brand, country, date_time, template, universe=1000):
         day_pg = [1,2,3,4,5,6,0]
 
 
@@ -269,75 +270,57 @@ class query:
         dt_obj = dt.strptime(date_time, '%Y-%m-%dT%H:%M:%SZ')
         
         try:
-            with dbConnection as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        SELECT DISTINCT androidid, COUNT(*) total FROM
-                        (SELECT androidid FROM imeis limit 1000) as imeis
-                        GROUP BY androidid
-                        """
-                    )
 
-                    result = cursor.fetchall()
-
-            page_size = 50
+            page_size = int(universe / 10) if universe > 1000 else universe
             done = False
             offset = 0
 
             with dbConnection as conn:
                 with conn.cursor() as cursor:
-                    while not done:
+                    while not done and offset < universe:
+                        
+
                         cursor.execute(
                             """
-                            SELECT DISTINCT androidid 
-                            FROM (SELECT androidid FROM imeis limit 1000) imeis 
+                            WITH devices AS (
+                            SELECT DISTINCT androidid
+                            FROM (SELECT androidid FROM imeis limit %s) imeis
                             LIMIT %s OFFSET %s
-                            """, (page_size, offset)
+                            )
+                            SELECT
+                                EXTRACT(dow from startdate) day_of_week,
+                                EXTRACT(hour from startdate) hour_of_day,
+                                U.template_id,
+                                U.oem,
+                                U.mcc,
+                                I.status,
+                                I.androidid
+                            FROM update U
+                                INNER JOIN imeis I ON (U.id=I.id)
+                                INNER JOIN cota_campaign_templates CCT ON CCT.id=U.template_id
+                                INNER JOIN devices D ON D.androidid = I.androidid
+                            WHERE I.status IS NOT NULL
+                            """,(universe, page_size, offset)
                         )
 
-                        # result = cursor.fetchall()
+                        result = cursor.fetchall()
 
-                        davices = numpy.array(cursor.fetchall())
-                        
-                        offset += page_size
-
-                        if davices.size == 0:
+                        if not result:
                             done = True
                             continue
 
-                        for device in numpy.nditer(davices):
-                            cursor.execute(
-                                """
-                                SELECT
-                                    EXTRACT(dow from startdate) day_of_week,
-                                    EXTRACT(hour from startdate) hour_of_day,
-                                    U.template_id,
-                                    U.oem,
-                                    U.mcc,
-                                    I.status
-                                FROM update U
-                                    INNER JOIN imeis I ON (U.id=I.id)
-                                    INNER JOIN cota_campaign_templates CCT ON CCT.id=U.template_id
-                                WHERE I.androidid=%(androidid)s AND
-                                    i.status IS NOT NULL;
-                                """,
-                                {
-                                    "androidid": device.item()
-                                }
-                            )
+                        df = pd.DataFrame(result)
 
-                            result = cursor.fetchall()
+                        imeis = set(df["androidid"])
 
-                            if not result:
-                                continue
+                        features = ["day_of_week", "hour_of_day", "template_id", "oem", "mcc"]
 
-                            df = pd.DataFrame(result)
+                        for imei in imeis:
 
-                            features = ["day_of_week", "hour_of_day", "template_id", "oem", "mcc"]
+                            device_responses = df.loc[df["androidid"] == imei]
 
-                            X = df[features]
-                            Y = df["status"]
+                            X = device_responses[features]
+                            Y = device_responses["status"]
                             
                             # predict with decision tree model
                             dtree = DecisionTreeClassifier()
@@ -349,7 +332,7 @@ class query:
 
                             # save decision tree prediction
                             decision_tree_result = DecisionTree(
-                                androidid=device.item(),
+                                androidid=imei,
                                 decision=str(predict[0]),
                                 date=date_time
                             )
@@ -358,6 +341,7 @@ class query:
 
                             session.commit()       
 
+                        offset += page_size
 
             group_result_query = text(
                 """
@@ -395,14 +379,6 @@ class query:
             error=error,
             data=data
         )
-
-    def get_data_from_csv(file_path: str) -> Generator:
-        with open(file=file_path, mode="rb") as file_like:
-            yield file_like.read()
-
-
-    def cleanup(csv_path):
-        os.remove(csv_path)
 
     def create_csv(self, session, response_name):
 
