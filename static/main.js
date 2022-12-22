@@ -143,12 +143,19 @@ function tab_tredesicion()
 //  LINEAR REGRESSION
 function start_regression()
 {
-    const startDate = document.getElementById("dateRegression");
     const mcc = document.getElementById("mccRegression");
+    if(mcc.value == "")
+    {
+        notify("Fill all the form, please", false);
+        return;
+    }
+
+    const startDate = document.getElementById("dateRegression");
+
     document.getElementById("spinnerOpenPush").style.display="block";
     document.getElementById("spinnerDeleviry").style.display="block";
-    by_open(startDate.value, mcc.value)
-    by_delivery(startDate.value, mcc.value)
+    by_open(startDate.value, mcc)
+    by_delivery(startDate.value, mcc)
 }
 
 function by_open(startDate, mcc)
@@ -156,7 +163,7 @@ function by_open(startDate, mcc)
     const cOpen = document.getElementById("containerOpen");
     cOpen.style.display="none";
     document.getElementById("dashboardOpen").style.display="none";
-    var url = make_url(window.location.href) + "/regression/open/" + mcc + "/" + startDate;
+    var url = make_url(window.location.href) + "/regression/open/" + mcc.value + "/" + startDate;
     var client = new HttpClient();
     client.get(url, function(response) {
         data = JSON.parse(response);
@@ -166,11 +173,18 @@ function by_open(startDate, mcc)
         document.getElementById("dashboardOpen").innerHTML="";
         if(!data.error)
         {
-            dasboard_linear("dashboardOpen", data.data,"Open_Push","Forecast by opened push");
-            const h4 = document.createElement("h4");
-            h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
-            cOpen.appendChild(h4);
-            notify("Linear Regression by open push is ready...", true);
+            if (data.data.length > 0)
+            {
+                dasboard_linear("dashboardOpen", data.data,"Open_Push","Forecast by opened push");
+                const h4 = document.createElement("h4");
+                h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
+                cOpen.appendChild(h4);
+                notify("Linear Regression by open push is ready...", true);
+            }
+            else{
+                notify("No data was found in the selected country " + mcc.options[mcc.selectedIndex].text , true);
+                cOpen.innerHTML="The last execution no data was found";
+            }
         }
         else
         {
@@ -187,7 +201,7 @@ function by_delivery(startDate, mcc)
     const c_delivery = document.getElementById("containerDelivery");
     c_delivery.style.display = "none";
     document.getElementById("dashboardDelivery").style.display="none";
-    var url = make_url(window.location.href) + "/regression/delivery/" + mcc + "/" + startDate;
+    var url = make_url(window.location.href) + "/regression/delivery/" + mcc.value + "/" + startDate;
     var client = new HttpClient();
     client.get(url, function(response) {
         data = JSON.parse(response);
@@ -198,11 +212,18 @@ function by_delivery(startDate, mcc)
 
         if(!data.error)
         {
-            dasboard_linear("dashboardDelivery", data.data,"Delivery","Forecast by opened push");
-            const h4 = document.createElement("h4");
-            h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
-            c_delivery.appendChild(h4);
-            notify("Linear Regression by open container is ready...", true);
+            if (data.data.length > 0)
+            {
+                dasboard_linear("dashboardDelivery", data.data,"Delivery","Forecast by delevired push");
+                const h4 = document.createElement("h4");
+                h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
+                c_delivery.appendChild(h4);
+                notify("Linear Regression by open container is ready...", true);
+            }
+            else{
+                c_delivery.innerHTML="The last execution no data was found";
+                notify("No data was found in the selected country " + mcc.options[mcc.selectedIndex].text , true);
+            }
         }
         else
         {
@@ -221,6 +242,12 @@ function start_decision()
     const country = document.getElementById("country_mcc").value;
     const date_time = document.getElementById("campaign_date").value;
     const template = document.getElementById("template").value;
+
+    if(template == "" || universe < 1 || brand == "" || country == "")
+    {
+        notify("Fill all the form, please", false);
+        return;
+    }
 
     const table_result = document.getElementById("tableResult");
     table_result.style.display = "none";

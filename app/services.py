@@ -76,7 +76,7 @@ class Service:
             )
 
             if not hours or not count_:
-                return {"error":True, "msg":"was not found data", "data":[]}
+                return {"error":False, "msg":"was not found data", "data":[]}
 
             # # predict speed
             data=[]
@@ -220,12 +220,12 @@ class query:
                                 and  u.mcc=%(mcc)s
                         )
                         SELECT to_char(DATE,'HH24') as hours, count(i.id) as count_
-                                FROM campaign c  inner join IMEIS i  on (i.id=c.id)
+                                FROM campaign c  inner join imeis i  on (i.id=c.id)
                                 WHERE {filter_status} AND i.DATE::date > (current_date - interval '90 days')
                                 group by to_char(DATE,'HH24')
                                 order by to_char(DATE,'HH24')
                         """).format(
-                            filter_status=sql.SQL("STATUS is not null" if type_=="delivery" else "STATUS IN (2,36,37,38,39,50,51,52)")
+                            filter_status=sql.SQL("STATUS is not null") if type_=="delivery" else sql.SQL("STATUS IN (2,36,37,38,39,50,51,52)")
                         ),
                         {
                             "mcc": mcc,
