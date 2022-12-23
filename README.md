@@ -97,11 +97,10 @@ WantedBy=multi-user.target
 
 ## requirements
 
-* Docker and docker-compose
-``` bash
-apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
-```
-## if you have a firewall active
+### Install Docker and docker-compose
+* check this post  https://docs.docker.com/engine/install/ubuntu/
+
+### if you have a firewall active
 - Open port with firewall-cmd
 ``` bash
 sudo firewall-cmd --add-port=8800/tcp --permanent
@@ -121,7 +120,7 @@ cp .env-sample .env
 
 > Updating var to connect data base:
 ``` bash
-HOST_DB="10.10.15.6"
+HOST_DB="172.10.11.1"
 PSQL_DB="cota"
 USER_DB="user1"
 PASS_DB="passwd1"
