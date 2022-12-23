@@ -101,6 +101,16 @@ WantedBy=multi-user.target
 ``` bash
 apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
 ```
+## if you have a firewall active
+- Open port with firewall-cmd
+``` bash
+sudo firewall-cmd --add-port=8800/tcp --permanent
+sudo firewall-cmd --reload
+```
+- Open port with ufw
+``` bash
+sudo ufw allow 8800
+```
 ## running test
 
 > Creating env file:
@@ -125,4 +135,4 @@ PAGINATION_CHUNK_SIZE = 1000
 ``` bash
 docker-compose -f docker-compose.yml up
 ```
-> Docker will start the API at http://localhost:8001
+> Docker will start the API at http://localhost:8800
