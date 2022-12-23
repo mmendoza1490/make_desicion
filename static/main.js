@@ -175,7 +175,7 @@ function by_open(startDate, mcc)
         {
             if (data.data.length > 0)
             {
-                dasboard_linear("dashboardOpen", data.data,"Open_Push","Forecast by opened push");
+                dasboard_linear("dashboardOpen", data.data,"Open_Push","Predict by opened push");
                 const h4 = document.createElement("h4");
                 h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
                 cOpen.appendChild(h4);
@@ -214,7 +214,7 @@ function by_delivery(startDate, mcc)
         {
             if (data.data.length > 0)
             {
-                dasboard_linear("dashboardDelivery", data.data,"Delivery","Forecast by delevired push");
+                dasboard_linear("dashboardDelivery", data.data,"Delivery","Predict by delevired push");
                 const h4 = document.createElement("h4");
                 h4.innerHTML = "The best hour is at " + data.bestHour + " with a result of " + data.bestCount;
                 c_delivery.appendChild(h4);

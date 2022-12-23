@@ -36,8 +36,8 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         docs_url="/help",
-        title="Make the Best Desicion - MBD",
-        description="Machine learning to make the best desicion",
+        title="Make the Best Decision - MBD",
+        description="Machine learning based tool to make the best decision",
         version="1.0.0",
         terms_of_service="https://digitalreef.com/",
         contact={
