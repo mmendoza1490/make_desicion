@@ -76,7 +76,7 @@ class Service:
             )
 
             if not hours or not count_:
-                return {"error":False, "msg":"was not found data", "data":[]}
+                return {"error":False, "msg":"no data was found", "data":[]}
 
             # # predict speed
             data=[]

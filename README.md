@@ -116,6 +116,9 @@ PSQL_DB="cota"
 USER_DB="user1"
 PASS_DB="passwd1"
 PORT_DB=5432
+
+# page size for pagination
+PAGINATION_CHUNK_SIZE = 1000
 ```
 
 > Running docker
