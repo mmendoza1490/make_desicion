@@ -14,10 +14,12 @@ machine learning based tool - make the best desicion MBD
 3. [Installation](#installation)
 4. [enviroment](#enviroment)
 5. [Running](#running)
+6. [User Manual](#user-manual)
+
 
 - **just for test**
-6. [Requirements](#requirements)
-7. [Running](#running-test)
+7. [Requirements](#requirements)
+8. [Running](#running-test)
 
 ## System Requirements
 
@@ -92,6 +94,9 @@ Group= user01
 [Install]
 WantedBy=multi-user.target
 ```
+
+# User Manual
+[PDF1](static/mbd_user_manual.pdf)
 
 # Just to test
 
