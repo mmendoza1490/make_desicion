@@ -101,12 +101,12 @@ WantedBy=multi-user.target
 * check this post  https://docs.docker.com/engine/install/ubuntu/
 
 ### if you have a firewall active
-- Open port with firewall-cmd
+> Open port with firewall-cmd
 ``` bash
 sudo firewall-cmd --add-port=8800/tcp --permanent
 sudo firewall-cmd --reload
 ```
-- Open port with ufw
+> Open port with ufw
 ``` bash
 sudo ufw allow 8800
 ```
