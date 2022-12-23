@@ -14,10 +14,9 @@ machine learning based tool - make the best desicion MBD
 3. [Installation](#installation)
 4. [enviroment](#enviroment)
 5. [Running](#running)
-6. [User Manual](#user-manual)
-
 
 - **just for test**
+6. [User Manual](#user-manual)
 7. [Requirements](#requirements)
 8. [Running](#running-test)
 
