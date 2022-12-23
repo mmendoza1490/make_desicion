@@ -11,7 +11,7 @@ services:
       - network
     command: ["gunicorn", "main:app"]
     ports:
-      - "8001:8800"
+      - "8800:8800"
     working_dir: /root/home/make_desicion/
 networks:
   network:
