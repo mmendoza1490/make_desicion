@@ -45,15 +45,20 @@ poetry install
 ## enviroment
 
 ```bash
-FAST_API_HOST="127.0.0.1"
-FAST_API_PORT="5000"
+# api init
+FAST_API_HOST="0.0.0.0"
+FAST_API_PORT="8800"
 ENVIRONMENT="development"
 
-HOST_DB="10.10.20.15"
+# data base
+HOST_DB="10.10.15.6"
 PSQL_DB="cota"
-USER_DB="postgres"
-PASS_DB="psql-1234"
-PORT_DB="5432"
+USER_DB="user1"
+PASS_DB="passwd1"
+PORT_DB=5432
+
+# chunk size that your PC can support
+PAGINATION_CHUNK_SIZE=1000
 ```
 
 ## Running
@@ -126,7 +131,7 @@ USER_DB="user1"
 PASS_DB="passwd1"
 PORT_DB=5432
 
-# page size for pagination
+# chunk size that your PC can support
 PAGINATION_CHUNK_SIZE = 1000
 ```
 
