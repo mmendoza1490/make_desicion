@@ -20,7 +20,7 @@ from .database import Database as _database
 from .models import DecisionTree
 from .schemas import Schemas as _schemas
 from app.types import Response, Catalogs, DecisionTreeData, DecisionTreeResponse
-from app.utils import cleanup, get_data_from_csv
+from app.utils import cleanup, get_data_from_csv, get_datetime_by_timezone
 
 @dataclass
 class Data_base():
@@ -50,6 +50,8 @@ class Service:
         self.query = query()
 
     def get_result_tree(self, dbConnection, session, brand, country, date_time, template, universe):
+
+        localized_date_time = get_datetime_by_timezone(country, date_time, dbConnection)
     
         data = self.query.train_decision_tree_model(
             dbConnection,
